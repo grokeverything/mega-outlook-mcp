@@ -1,0 +1,150 @@
+{
+  "baseline_outlook_versions": {
+    "windows": "Microsoft 365 / Outlook 2024 (16.0.x classic, COM-enabled)",
+    "macos": "Microsoft Outlook for Mac 16.x (classic; 'New Outlook' explicitly unsupported)"
+  },
+  "windows_com": {
+    "namespace_progid": "Outlook.Application",
+    "default_folders": {
+      "Inbox": 6,
+      "SentItems": 5,
+      "Drafts": 16,
+      "DeletedItems": 3,
+      "JunkEmail": 23,
+      "Outbox": 4,
+      "Calendar": 9,
+      "Contacts": 10,
+      "Tasks": 13,
+      "Notes": 12
+    },
+    "create_item_codes": {
+      "olMailItem": 0,
+      "olAppointmentItem": 1,
+      "olContactItem": 2,
+      "olTaskItem": 3,
+      "olNoteItem": 5
+    },
+    "meeting_response_codes": {
+      "olMeetingTentative": 2,
+      "olMeetingAccepted": 3,
+      "olMeetingDeclined": 4
+    },
+    "mapi_property_tags": {
+      "PR_SMTP_ADDRESS": "0x39FE001F",
+      "PR_INTERNET_MESSAGE_ID": "0x1035001F",
+      "PR_IN_REPLY_TO_ID": "0x1042001F",
+      "PR_INTERNET_REFERENCES": "0x1039001F",
+      "PR_TRANSPORT_HEADERS": "0x007D001F",
+      "PR_SENT_REPRESENTING_SMTP": "0x5D02001F",
+      "PR_SENDER_SMTP": "0x5D01001F"
+    },
+    "item_properties": [
+      "EntryID",
+      "ConversationID",
+      "ConversationTopic",
+      "Subject",
+      "SenderName",
+      "SenderEmailAddress",
+      "Recipients",
+      "ReceivedTime",
+      "SentOn",
+      "UnRead",
+      "Importance",
+      "Body",
+      "HTMLBody",
+      "Attachments",
+      "Size",
+      "PropertyAccessor",
+      "Sender",
+      "Class"
+    ],
+    "calendar_properties": [
+      "Start",
+      "End",
+      "StartUTC",
+      "EndUTC",
+      "Location",
+      "AllDayEvent",
+      "IsRecurring",
+      "Body",
+      "Recipients",
+      "EntryID"
+    ],
+    "contact_properties": [
+      "FullName",
+      "FileAs",
+      "Email1Address",
+      "Email2Address",
+      "Email3Address",
+      "CompanyName",
+      "JobTitle",
+      "BusinessTelephoneNumber",
+      "HomeTelephoneNumber",
+      "MobileTelephoneNumber",
+      "EntryID"
+    ],
+    "attachment_types": {
+      "olByValue": 1,
+      "olByReference": 4,
+      "olEmbeddeditem": 5,
+      "olOLE": 6
+    }
+  },
+  "macos_applescript": {
+    "application_name": "Microsoft Outlook",
+    "message_properties": [
+      "id",
+      "subject",
+      "sender",
+      "time received",
+      "time sent",
+      "is read",
+      "has attachment",
+      "conversation",
+      "mail folder",
+      "plain text content",
+      "content",
+      "source"
+    ],
+    "calendar_event_properties": [
+      "id",
+      "subject",
+      "organizer",
+      "start time",
+      "end time",
+      "location",
+      "all day flag",
+      "attendees"
+    ],
+    "contact_properties": [
+      "id",
+      "display name",
+      "company",
+      "job title",
+      "email addresses",
+      "phone numbers"
+    ],
+    "known_renames": {
+      "received time": "time received",
+      "sent time": "time sent"
+    },
+    "task_properties": [
+      "id",
+      "subject",
+      "due date",
+      "completed",
+      "plain text content"
+    ],
+    "note_properties": [
+      "id",
+      "subject",
+      "plain text content",
+      "modification date"
+    ],
+    "account_collections": [
+      "exchange accounts",
+      "imap accounts",
+      "pop accounts"
+    ]
+  }
+}

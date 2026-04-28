@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Verify imports + tool registration
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Verify imports + 64 tools register
+        run: |
+          python - <<'PYEOF'
+          import sys
+          from unittest.mock import AsyncMock, MagicMock
+          from mcp.server.fastmcp import FastMCP
+
+          from mega_outlook_mcp.backends.base import (
+              AccountInfo, AttachmentInfo, Backend, CalendarEvent, Contact,
+              DiagnosticsResult, EmailBody, EmailFullMetadata, EmailSummary,
+              FolderInfo, FreeBusyResponse, MailboxInfo, MailboxQuota,
+              NoteInfo, OperationResult, OutOfOfficeStatus, RuleInfo,
+              SignatureInfo, TaskInfo,
+          )
+          from mega_outlook_mcp.tools import register_all
+          from mega_outlook_mcp.utils.subject_utils import normalize_subject
+
+          # Subject normalization spot check.
+          assert normalize_subject("Re: [External] [Action Required] Q3") == "[action required] q3", normalize_subject("Re: [External] [Action Required] Q3")
+
+          # Build a dummy backend covering every method.
+          fake = MagicMock()
+          op = OperationResult(True, "ok")
+          for name, value in {
+              "get_mailbox_info": MailboxInfo("Me", "me@example.com", "example.com"),
+              "list_folders": [], "get_emails_in_time_range": [],
+              "get_conversation_thread": [], "search_emails": [],
+              "list_calendar_events": [], "list_contacts": [],
+              "search_contacts": [], "list_tasks": [], "search_tasks": [],
+              "list_notes": [], "search_notes": [], "list_accounts": [],
+              "list_rules": [], "calendar_freebusy": [],
+              "meeting_room_finder": [], "gal_search": [],
+              "list_delegated_mailboxes": [], "list_public_folders": [],
+              "save_attachment": AttachmentInfo(1, "x", 1, False),
+              "get_email_full_metadata": None, "get_calendar_event": None,
+              "get_contact": None,
+              "get_task": TaskInfo("T", "s", None, False, "normal", ""),
+              "get_note": NoteInfo("N", "s", "b", None),
+              "get_unread_count": 0,
+              "diagnostics": DiagnosticsResult("linux", "test", "test", "HEALTHY", {}, [], []),
+              "get_out_of_office": OutOfOfficeStatus(False, "", "", None, None, "all"),
+              "get_signature": SignatureInfo("", "", ""),
+              "get_mailbox_quota": MailboxQuota(0, 0, None, None, 0),
+          }.items():
+              setattr(fake, name, AsyncMock(return_value=value))
+          for op_name in (
+              "send_email", "create_draft", "reply_email", "forward_email",
+              "mark_email_read", "set_email_flag", "set_email_categories",
+              "move_email", "archive_email", "delete_email", "junk_email",
+              "create_folder", "rename_folder", "move_folder", "delete_folder",
+              "empty_folder", "create_calendar_event", "update_calendar_event",
+              "delete_calendar_event", "respond_to_event",
+              "set_out_of_office", "set_signature", "toggle_rule",
+          ):
+              setattr(fake, op_name, AsyncMock(return_value=op))
+
+          mcp = FastMCP("test")
+          register_all(mcp, fake)
+          tools = [t.name for t in mcp._tool_manager.list_tools()]
+          assert len(tools) == 64, f"expected 64, got {len(tools)}"
+          print(f"OK: {len(tools)} tools registered on Python {sys.version.split()[0]}")
+          PYEOF
