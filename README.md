@@ -86,7 +86,7 @@ with a unified Backend Protocol. Highlights:
 </details>
 
 <details>
-<summary><b>Exchange-specific (Windows-COM-only; Mac returns ERROR-MAC-Support-Unavailable)</b> (10)</summary>
+<summary><b>Exchange-specific (Windows-COM-only; Mac returns ERROR-MAC-Support-Unavailable)</b> (11)</summary>
 
 `outlook_get_out_of_office`, `outlook_set_out_of_office`,
 `outlook_get_signature`, `outlook_set_signature`, `outlook_list_rules`,
@@ -96,7 +96,7 @@ with a unified Backend Protocol. Highlights:
 </details>
 
 <details>
-<summary><b>Utility</b> (4)</summary>
+<summary><b>Utility</b> (3)</summary>
 
 `outlook_get_current_time`, `outlook_write_file`, `outlook_diagnostics`
 </details>
