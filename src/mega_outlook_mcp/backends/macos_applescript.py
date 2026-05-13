@@ -627,7 +627,7 @@ def _parse_fields(block: str) -> dict[str, str]:
 
 def _int(value: Any) -> int:
     try:
-        return int(str(value).strip())
+        return int(float(str(value).strip().replace(",", ".")))
     except (TypeError, ValueError):
         return 0
 
@@ -640,7 +640,7 @@ def _epoch_to_utc(value: Any) -> datetime | None:
     if value is None or value == "":
         return None
     try:
-        secs = int(value)
+        secs = int(float(str(value).strip().replace(",", ".")))
     except (TypeError, ValueError):
         return None
     try:
