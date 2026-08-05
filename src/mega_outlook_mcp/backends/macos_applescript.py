@@ -8,6 +8,7 @@ access is blocked by "New Outlook") are returned as the literal string
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -189,10 +190,19 @@ class MacOSAppleScriptBackend(Backend):
                 f"Failed to save attachment {attachment_index} of {entry_id!r} to {save_path!r}: {exc}"
             ) from exc
         fields = _parse_single(raw)
+        # Outlook's `file size` property reports the encoded (MIME) size;
+        # prefer the actual bytes written. A zero-byte or missing file means
+        # the save silently failed despite osascript exiting 0.
+        try:
+            size_bytes = os.path.getsize(save_path)
+        except OSError as exc:
+            raise AttachmentError(
+                f"Outlook reported success but no file was written to {save_path!r}."
+            ) from exc
         return AttachmentInfo(
             index=attachment_index,
             filename=fields.get("name", ""),
-            size_bytes=_int(fields.get("size", "0")),
+            size_bytes=size_bytes,
             is_inline=False,
         )
 
