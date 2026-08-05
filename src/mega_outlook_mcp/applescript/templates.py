@@ -37,14 +37,14 @@ def _preamble() -> str:
 
 def _epoch_expr(varname: str) -> str:
     """AppleScript expression: convert date variable to Unix epoch seconds."""
-    return f"(({varname} - nowDate) + nowEpoch) as integer"
+    return f"((({varname} - nowDate) + nowEpoch) as integer)"
 
 
 def mailbox_info() -> str:
     return (
         'tell application "Microsoft Outlook"\n'
         "  try\n"
-        "    set acct to default exchange account\n"
+        "    set acct to default account\n"
         "  on error\n"
         "    try\n"
         "      set acct to first exchange account\n"
@@ -104,10 +104,9 @@ def _message_record_expr(prefix: str = "m") -> str:
         "set rTime to time received of " + prefix + "\n"
         "set sTime to time sent of " + prefix + "\n"
         "set isRead to is read of " + prefix + "\n"
-        "set hasAttach to has attachment of " + prefix + "\n"
+        "set hasAttach to ((count of attachments of " + prefix + ") > 0)\n"
         "try\n"
-        "  set convObj to conversation of " + prefix + "\n"
-        "  set convId to id of convObj\n"
+        "  set convId to conversation id of " + prefix + "\n"
         "on error\n"
         "  set convId to \"\"\n"
         "end try\n"
@@ -125,8 +124,8 @@ def _message_record_expr(prefix: str = "m") -> str:
         "if length of previewText > 200 then set previewText to text 1 thru 200 of previewText\n"
         "set out to out & recSep & fldSep & \"id=\" & msgId & fldSep & \"subject=\" & msgSubject"
         " & fldSep & \"senderName=\" & senderName & fldSep & \"senderAddr=\" & senderAddr"
-        " & fldSep & \"received=\" & ((rTime - nowDate) + nowEpoch) as integer"
-        " & fldSep & \"sent=\" & ((sTime - nowDate) + nowEpoch) as integer"
+        " & fldSep & \"received=\" & (((rTime - nowDate) + nowEpoch) as integer)"
+        " & fldSep & \"sent=\" & (((sTime - nowDate) + nowEpoch) as integer)"
         " & fldSep & \"isRead=\" & (isRead as string)"
         " & fldSep & \"hasAttach=\" & (hasAttach as string)"
         " & fldSep & \"convId=\" & convId"
@@ -152,7 +151,19 @@ def emails_in_time_range(
         "  set total to 0\n"
         "  repeat with fname in folderNames\n"
         "    try\n"
-        "      set f to mail folder (fname as string)\n"
+        "      if (fname as string) is \"Inbox\" then\n"
+"        set f to inbox\n"
+"      else if (fname as string) is \"Sent Items\" then\n"
+"        set f to sent items\n"
+"      else if (fname as string) is \"Drafts\" then\n"
+"        set f to drafts\n"
+"      else if (fname as string) is \"Deleted Items\" then\n"
+"        set f to deleted items\n"
+"      else if (fname as string) is \"Outbox\" then\n"
+"        set f to outbox\n"
+"      else\n"
+"        set f to mail folder (fname as string)\n"
+"      end if\n"
         "    on error\n"
         "      try\n"
         "        set f to first mail folder whose name is (fname as string)\n"
@@ -180,12 +191,14 @@ def conversation_thread(conversation_id: str, max_messages: int) -> str:
         _preamble()
         + 'tell application "Microsoft Outlook"\n'
         '  set out to ""\n'
-        f"  set convId to {as_str(conversation_id)}\n"
+        f"  set convId to ({as_str(conversation_id)} as integer)\n"
         f"  set maxRes to {max_messages}\n"
         "  set total to 0\n"
         "  try\n"
-        "    set convObj to conversation id convId\n"
-        "    set msgs to messages of convObj\n"
+        "    set msgs to (every message of inbox whose conversation id is convId)\n"
+        "    try\n"
+        "      set msgs to msgs & (every message of sent items whose conversation id is convId)\n"
+        "    end try\n"
         "    repeat with m in msgs\n"
         "      if total >= maxRes then exit repeat\n"
         + _indent(_message_record_expr("m"), 6)
@@ -223,11 +236,7 @@ def email_metadata(message_id: str) -> str:
         "    repeat with a in attList\n"
         "      set aName to name of a\n"
         "      set aSize to file size of a\n"
-        "      try\n"
-        "        set aCid to content identifier of a\n"
-        "      on error\n"
-        "        set aCid to \"\"\n"
-        "      end try\n"
+        "      set aCid to \"\"\n"
         "      set out to out & recSep & fldSep & \"attachName=\" & aName & fldSep & \"attachSize=\" & aSize & fldSep & \"attachCid=\" & aCid\n"
         "    end repeat\n"
         "  end try\n"
@@ -261,7 +270,19 @@ def search_emails(query: str, folders: list[str], max_results: int) -> str:
         "  set total to 0\n"
         "  repeat with fname in folderNames\n"
         "    try\n"
-        "      set f to mail folder (fname as string)\n"
+        "      if (fname as string) is \"Inbox\" then\n"
+"        set f to inbox\n"
+"      else if (fname as string) is \"Sent Items\" then\n"
+"        set f to sent items\n"
+"      else if (fname as string) is \"Drafts\" then\n"
+"        set f to drafts\n"
+"      else if (fname as string) is \"Deleted Items\" then\n"
+"        set f to deleted items\n"
+"      else if (fname as string) is \"Outbox\" then\n"
+"        set f to outbox\n"
+"      else\n"
+"        set f to mail folder (fname as string)\n"
+"      end if\n"
         "    on error\n"
         "      set f to missing value\n"
         "    end try\n"
@@ -307,8 +328,8 @@ def list_calendar_events(
         "    set eAllDay to all day flag of e\n"
         "    set out to out & recSep & fldSep & \"id=\" & eId & fldSep & \"subject=\" & eSubject"
         " & fldSep & \"organizer=\" & eOrganizer"
-        " & fldSep & \"start=\" & ((eStart - nowDate) + nowEpoch) as integer"
-        " & fldSep & \"end=\" & ((eEnd - nowDate) + nowEpoch) as integer"
+        " & fldSep & \"start=\" & (((eStart - nowDate) + nowEpoch) as integer)"
+        " & fldSep & \"end=\" & (((eEnd - nowDate) + nowEpoch) as integer)"
         " & fldSep & \"location=\" & eLocation"
         " & fldSep & \"allDay=\" & (eAllDay as string)\n"
         "    set total to total + 1\n"
@@ -336,8 +357,8 @@ def get_calendar_event(event_id: str) -> str:
         "  set eBody to plain text content of e\n"
         "  set out to fldSep & \"subject=\" & eSubject"
         " & fldSep & \"organizer=\" & eOrganizer"
-        " & fldSep & \"start=\" & ((eStart - nowDate) + nowEpoch) as integer"
-        " & fldSep & \"end=\" & ((eEnd - nowDate) + nowEpoch) as integer"
+        " & fldSep & \"start=\" & (((eStart - nowDate) + nowEpoch) as integer)"
+        " & fldSep & \"end=\" & (((eEnd - nowDate) + nowEpoch) as integer)"
         " & fldSep & \"location=\" & eLocation"
         " & fldSep & \"allDay=\" & (eAllDay as string)"
         " & fldSep & \"body=\" & eBody\n"
@@ -456,13 +477,23 @@ def get_contact(contact_id: str) -> str:
         "      set out to out & recSep & fldSep & \"email=\" & (address of e)\n"
         "    end repeat\n"
         "  end try\n"
-        "  try\n"
-        "    set phones to phone numbers of c\n"
-        "    repeat with p in phones\n"
-        "      set out to out & recSep & fldSep & \"phone=\" & (number of p) & fldSep & \"phoneLabel=\" & (label of p)\n"
-        "    end repeat\n"
-        "  end try\n"
-        "  return out\n"
+        + "".join(
+            f"  try\n"
+            f"    set pv to {prop} of c\n"
+            f"    if pv is not missing value then\n"
+            f"      if (pv as string) is not \"\" then set out to out & recSep & fldSep & \"phone=\" & pv & fldSep & \"phoneLabel={label}\"\n"
+            f"    end if\n"
+            f"  end try\n"
+            for label, prop in (
+                ("home", "home phone number"),
+                ("business", "business phone number"),
+                ("mobile", "mobile number"),
+                ("assistant", "assistant phone number"),
+                ("other_home", "other home phone number"),
+                ("other_business", "other business phone number"),
+            )
+        )
+        + "  return out\n"
         "end tell\n"
     )
 
@@ -486,13 +517,20 @@ def diagnostics(message_props: list[str], sample_message_id: str | None) -> str:
             "  end try\n"
         )
     )
+    # Terms that no longer parse against the current Outlook dictionary must
+    # not be inlined verbatim: one bad term is a compile error that kills the
+    # whole script (not catchable by try blocks).
+    _PROP_EXPR_OVERRIDES = {
+        "has attachment": "((count of attachments of m) > 0)",
+    }
     probes_lines = []
     for prop in message_props:
         # Each probe: try to read the property; record ok | error.
         ascii_key = prop.replace(" ", "_")
+        expr = _PROP_EXPR_OVERRIDES.get(prop, f"{prop} of m")
         probes_lines.append(
             f"  try\n"
-            f"    if m is not missing value then set _v to {prop} of m\n"
+            f"    if m is not missing value then set _v to {expr}\n"
             f"    set out to out & fldSep & \"{ascii_key}=ok\"\n"
             f"  on error errMsg\n"
             f"    set out to out & fldSep & \"{ascii_key}=error:\" & errMsg\n"
@@ -568,11 +606,11 @@ def send_email(to: list[str], subject: str, body: str, body_type: str,
 def reply_email(message_id: str, body: str, body_type: str, reply_all: bool) -> str:
     is_html = (body_type or "plain").lower() == "html"
     body_prop = "content" if is_html else "plain text content"
-    verb = "reply to all" if reply_all else "reply"
+    all_param = " with reply to all" if reply_all else ""
     return (
         'tell application "Microsoft Outlook"\n'
         f"  set m to incoming message id {as_str(message_id)}\n"
-        f"  set replyMsg to {verb} m\n"
+        f"  set replyMsg to reply to m without opening window{all_param}\n"
         f"  set {body_prop} of replyMsg to {as_str(body)} & ({body_prop} of replyMsg)\n"
         "  send replyMsg\n"
         f"  return \"{FLD}id=\" & (id of replyMsg as string)\n"
@@ -587,7 +625,7 @@ def forward_email(message_id: str, to: list[str], body: str, body_type: str) -> 
     return (
         'tell application "Microsoft Outlook"\n'
         f"  set m to incoming message id {as_str(message_id)}\n"
-        "  set fwdMsg to redirect m\n"
+        "  set fwdMsg to forward m without opening window\n"
         f"  set toRecipients to {{{to_lit}}}\n"
         "  repeat with addr in toRecipients\n"
         '    make new recipient at fwdMsg with properties {email address:{address:addr}}\n'
